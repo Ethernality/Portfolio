@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>μBuilds — Myu Nan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ===== RESET & VARIABLES ===== */
+    :root {
+      --bg: #0d0d0d;
+      --bg-card: #1a1a1a;
+      --bg-section: #111;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-dim: #555;
+      --accent: #e63946;
+      --accent-glow: rgba(230,57,70,0.3);
+      --road-fill: #222;
+      --road-edge: #3a3a3a;
+      --road-dash: #aaa;
+      --nav-h: 60px;
+      --moto-w: 60px;
+      --moto-h: 60px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{overflow-x:hidden;scroll-behavior:auto}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+    /* ===== LOADER ===== */
+    #loader{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
+    #loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .loader-moto{width:50px;animation:ldBounce 1s ease-in-out infinite}
+    .loader-text{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--text-muted);margin-top:14px;letter-spacing:2px}
+    @keyframes ldBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+    /* ===== NAV ===== */
+    nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 40px;z-index:200;background:rgba(13,13,13,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.04)}
+    .nav-logo{font-family:'Space Mono',monospace;font-size:1.15rem;font-weight:700}.nav-logo span{color:var(--accent)}
+    .nav-links{display:flex;gap:30px;list-style:none}
+    .nav-links a{font-family:'Caveat',cursive;font-size:1.2rem;color:var(--text-muted);text-decoration:none;transition:color .3s}.nav-links a:hover{color:var(--accent)}
+
+    /* ===== SIDEBAR DOTS ===== */
+    .sidebar-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);z-index:190;display:flex;flex-direction:column;gap:14px}
+    .sidebar-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--text-dim);background:transparent;cursor:pointer;transition:all .3s;position:relative}
+    .sidebar-dot.active{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent-glow);transform:scale(1.3)}
+    .sidebar-label{position:absolute;left:20px;top:50%;transform:translateY(-50%);white-space:nowrap;font-family:'Caveat',cursive;font-size:.85rem;color:var(--text-muted);opacity:0;transition:opacity .3s;pointer-events:none}
+    .sidebar-dot:hover .sidebar-label{opacity:1}
+
+    /* ===== ROAD SVG (absolute, behind content) ===== */
+    #road-svg{position:absolute;top:0;left:0;pointer-events:none;z-index:1;overflow:visible}
+    .road-surface-path{fill:none;stroke:var(--road-fill);stroke-linecap:round;stroke-linejoin:round}
+    .road-edge-path{fill:none;stroke:var(--road-edge);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .road-dash-path{fill:none;stroke:var(--road-dash);stroke-width:2;stroke-dasharray:22 18;opacity:.45;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ===== MOTORCYCLE ===== */
+    #motorcycle{position:fixed;left:10vw;top:42vh;transform:translate(-50%,-50%) rotate(90deg);z-index:150;width:var(--moto-w);height:var(--moto-h);pointer-events:none;filter:drop-shadow(0 2px 14px rgba(0,0,0,.6));will-change:transform,left,top}
+    #motorcycle svg{width:100%;height:100%}
+    .motorcycle-sprite{width:100%;height:100%;object-fit:contain;transform:scaleX(-1);transform-origin:center center}
+    .debug-build-badge{display:none;position:fixed;top:78px;right:18px;z-index:5000;padding:10px 14px;border:2px solid #ffef5a;background:#ff3b30;color:#111;font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+    .debug-moto-panel{display:none;position:fixed;top:128px;right:18px;z-index:5000;min-width:250px;padding:12px 14px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.22);color:#f0f0f0;font-family:'Space Mono',monospace;font-size:.68rem;line-height:1.6;white-space:pre-wrap;box-shadow:0 12px 28px rgba(0,0,0,.45)}
+
+    /* ===== SECTIONS ===== */
+    section{position:relative;z-index:5}
+
+    /* ===== HERO ===== */
+    #hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:var(--nav-h) 40px 60px 140px}
+    .hero-content{text-align:left;max-width:650px;z-index:10}
+    .hero-greeting{font-family:'Caveat',cursive;font-size:1.35rem;color:var(--accent);margin-bottom:6px;opacity:0}
+    .hero-name{font-family:'Caveat',cursive;font-size:clamp(3rem,8vw,5.5rem);font-weight:700;line-height:1.05;margin-bottom:10px;opacity:0;background:linear-gradient(135deg,var(--text),#aaa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero-title{font-family:'Space Mono',monospace;font-size:clamp(.82rem,1.4vw,1rem);color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;opacity:0}
+    .hero-scroll-hint{margin-top:60px;display:flex;align-items:center;gap:10px;opacity:0}
+    .hero-scroll-text{font-family:'Caveat',cursive;font-size:1rem;color:var(--text-dim)}
+    .hero-scroll-arrow{width:16px;height:16px;border-right:2px solid var(--text-dim);border-bottom:2px solid var(--text-dim);transform:rotate(45deg);animation:arrBob 2s ease-in-out infinite}
+    @keyframes arrBob{0%,100%{transform:rotate(45deg) translate(0,0);opacity:.5}50%{transform:rotate(45deg) translate(3px,3px);opacity:1}}
+
+    /* ===== ABOUT ===== */
+    #about{min-height:100vh;display:flex;align-items:center;padding:100px 40px 100px 240px}
+    .about-container{max-width:950px;display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
+    .about-left h2{font-family:'Caveat',cursive;font-size:clamp(2.4rem,4vw,3.4rem);margin-bottom:6px}.about-left h2 span{color:var(--accent)}
+    .about-subtitle{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:22px}
+    .about-text{color:var(--text-muted);font-size:.93rem;line-height:1.8}.about-text p{margin-bottom:14px}
+    .about-right{display:flex;flex-direction:column;gap:14px}
+    .about-stat{background:var(--bg-card);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:18px 22px;display:flex;align-items:center;gap:14px;transition:border-color .3s}.about-stat:hover{border-color:var(--accent)}
+    .about-stat-icon{width:38px;height:38px;background:rgba(230,57,70,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+    .about-stat-info h4{font-family:'Space Mono',monospace;font-size:.82rem;margin-bottom:2px}.about-stat-info p{font-size:.78rem;color:var(--text-dim)}
+
+    /* ===== PROJECTS ===== */
+    #projects{min-height:100vh;overflow:hidden;padding-top:80px}
+    .projects-header{padding:0 40px 30px;text-align:center}
+    .projects-header h2{font-family:'Caveat',cursive;font-size:clamp(2.4rem,4vw,3.4rem);margin-bottom:6px}.projects-header h2 span{color:var(--accent)}
+    .projects-header p{font-size:.88rem;color:var(--text-dim)}
+    .projects-track-wrapper{position:relative;overflow:visible}
+    .projects-track{display:flex;gap:30px;padding:0 40px 60px;width:max-content}
+    .project-card{width:370px;background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;flex-shrink:0;cursor:pointer;transition:transform .4s,border-color .4s,box-shadow .4s}
+    .project-card:hover{transform:translateY(-8px);border-color:var(--accent);box-shadow:0 16px 50px rgba(0,0,0,.4),0 0 24px var(--accent-glow)}
+    .project-card-image{width:100%;height:210px;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);display:flex;align-items:center;justify-content:center}
+    .project-card-image span{font-family:'Caveat',cursive;color:var(--text-dim);font-size:1.05rem}
+    .project-card-body{padding:22px}
+    .project-card h3{font-family:'Caveat',cursive;font-size:1.65rem;margin-bottom:7px}
+    .project-card p{color:var(--text-muted);font-size:.86rem;line-height:1.6;margin-bottom:14px}
+    .project-tags{display:flex;gap:7px;flex-wrap:wrap}
+    .project-tag{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--accent);background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.2);padding:3px 10px;border-radius:18px;letter-spacing:.5px}
+    .scroll-right-hint{position:absolute;right:50px;top:50%;transform:translateY(-50%);font-family:'Caveat',cursive;color:var(--text-dim);font-size:.95rem;animation:hSlide 2s ease-in-out infinite}
+    @keyframes hSlide{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(8px)}}
+
+    /* ===== CONTACT ===== */
+    #contact{min-height:60vh;display:flex;align-items:center;justify-content:center;padding:100px 40px 28vh;background:var(--bg-section);border-top:1px solid rgba(255,255,255,.03)}
+    .contact-container{max-width:700px;width:100%;margin:0 auto;text-align:center}
+    .contact-container h2{font-family:'Caveat',cursive;font-size:clamp(2.4rem,4vw,3.4rem);margin-bottom:6px}.contact-container h2 span{color:var(--accent)}
+    .contact-subtitle{color:#bdbdbd;font-size:.95rem;margin-bottom:36px}
+    .contact-links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+    .contact-link{display:flex;align-items:center;gap:10px;font-family:'Space Mono',monospace;font-size:.82rem;color:#f3f3f3 !important;-webkit-text-fill-color:#f3f3f3;text-decoration:none;padding:14px 24px;background:var(--bg-section);border:1px solid rgba(255,255,255,.18);border-radius:12px;box-shadow:0 14px 32px rgba(0,0,0,.28);transition:all .3s}
+    .contact-link:visited,.contact-link:active{color:#f3f3f3 !important;-webkit-text-fill-color:#f3f3f3}
+    .contact-link-icon{display:inline-flex;align-items:center;justify-content:center;min-width:18px;color:var(--accent) !important;font-size:1rem}
+    .contact-link:hover{color:#fff !important;-webkit-text-fill-color:#fff;border-color:var(--accent);background:var(--accent);transform:translateY(-2px)}
+    .contact-link:hover .contact-link-icon{color:#fff !important}
+    .footer{text-align:center;padding:28px;margin-top:8vh;font-size:.72rem;color:var(--text-dim);font-family:'Space Mono',monospace;position:relative;z-index:5}
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:768px){
+      nav{padding:0 18px}.nav-links{gap:18px}.nav-links a{font-size:1rem}
+      .sidebar-nav{display:none}
+      :root{--moto-w:42px;--moto-h:42px}
+      #hero,#about{padding-left:40px}
+      #contact{padding-right:40px}
+      .about-container{grid-template-columns:1fr;gap:36px}
+      .project-card{width:290px}
+      .contact-links{flex-direction:column;align-items:center}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADER -->
+  <div id="loader">
+    <svg class="loader-moto" viewBox="0 0 64 64" fill="none">
+      <circle cx="16" cy="44" r="9" stroke="#e63946" stroke-width="2.5" fill="none"/>
+      <circle cx="48" cy="44" r="9" stroke="#e63946" stroke-width="2.5" fill="none"/>
+      <path d="M16 44 L26 26 L40 26 L48 44" stroke="#f0f0f0" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M21 28 Q27 20 34 26" stroke="#f0f0f0" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M40 26 L46 18 M42 18 L50 18" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"/>
+      <rect x="23" y="32" width="11" height="7" rx="2" fill="#e63946" opacity="0.8"/>
+    </svg>
+    <!-- <img class="motorcycle-sprite" src="cleaned_akira2.png" alt="Motorcycle"/> -->
+    <div class="loader-text">STARTING ENGINE...</div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo"><span>μ</span>Builds</div>
+    <ul class="nav-links">
+      <li><a href="#about" data-nav>About</a></li>
+      <li><a href="#projects" data-nav>Projects</a></li>
+      <li><a href="#contact" data-nav>Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- SIDEBAR DOTS -->
+  <div class="sidebar-nav">
+    <div class="sidebar-dot active" data-section="hero"><span class="sidebar-label">Home</span></div>
+    <div class="sidebar-dot" data-section="about"><span class="sidebar-label">About</span></div>
+    <div class="sidebar-dot" data-section="projects"><span class="sidebar-label">Projects</span></div>
+    <div class="sidebar-dot" data-section="contact"><span class="sidebar-label">Contact</span></div>
+  </div>
+
+  <!-- ROAD SVG — drawn dynamically by JS -->
+  <svg id="road-svg" preserveAspectRatio="none">
+    <path class="road-surface-path" id="roadSurface" d=""/>
+    <path class="road-edge-path"    id="roadEdgeL"   d=""/>
+    <path class="road-edge-path"    id="roadEdgeR"   d=""/>
+    <path class="road-dash-path"    id="roadDashes"  d=""/>
+  </svg>
+
+  <!-- MOTORCYCLE -->
+  <div id="motorcycle">
+    <!-- <svg viewBox="0 0 80 80" fill="none">
+      <ellipse cx="40" cy="38" rx="10" ry="22" fill="#e63946" opacity=".9"/>
+      <ellipse cx="40" cy="48" rx="8" ry="10" fill="#333"/>
+      <rect x="36" y="12" width="8" height="14" rx="4" fill="#444"/>
+      <ellipse cx="40" cy="12" rx="5" ry="3" fill="#ffdd57" opacity=".9"/>
+      <ellipse cx="40" cy="12" rx="3" ry="2" fill="#fff" opacity=".7"/>
+      <rect x="22" y="22" width="36" height="3" rx="1.5" fill="#666"/>
+      <circle cx="22" cy="23.5" r="3" fill="#555"/>
+      <circle cx="58" cy="23.5" r="3" fill="#555"/>
+      <ellipse cx="19" cy="20" rx="3" ry="2" fill="#888" opacity=".6"/>
+      <ellipse cx="61" cy="20" rx="3" ry="2" fill="#888" opacity=".6"/>
+      <rect x="28" y="34" width="5" height="12" rx="1" fill="#555" opacity=".7"/>
+      <rect x="47" y="34" width="5" height="12" rx="1" fill="#555" opacity=".7"/>
+      <rect x="26" y="46" width="3" height="16" rx="1.5" fill="#777" opacity=".5"/>
+      <rect x="51" y="46" width="3" height="16" rx="1.5" fill="#777" opacity=".5"/>
+      <ellipse cx="40" cy="62" rx="4" ry="2" fill="#e63946" opacity=".7"/>
+      <rect x="36" y="56" width="8" height="10" rx="3" fill="#444"/>
+      <rect x="34" y="6" width="12" height="4" rx="2" fill="#222" stroke="#444" stroke-width=".5"/>
+      <rect x="34" y="64" width="12" height="4" rx="2" fill="#222" stroke="#444" stroke-width=".5"/>
+    </svg> -->
+    <img class="motorcycle-sprite" src="cleaned_akira2.png" alt="Motorcycle"/>
+  </div>
+  <div class="debug-build-badge" id="debugBuildBadge">DEBUG BUILD R7</div>
+  <pre class="debug-moto-panel" id="debugMotoPanel">debug panel booting...</pre>
+
+  <!-- ==================== HERO ==================== -->
+  <section id="hero">
+    <div class="hero-content">
+      <p class="hero-greeting">Hey, I'm</p>
+      <h1 class="hero-name">Myu Nan</h1>
+      <p class="hero-title">Computer Engineer</p>
+      <div class="hero-scroll-hint">
+        <span class="hero-scroll-text">scroll to ride.    </span>
+        <p class="hero-greeting"></p>
+        <p class="hero-greeting"></p>
+        <div class="hero-scroll-arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== ABOUT ==================== -->
+  <section id="about">
+    <div class="about-container">
+      <div class="about-left">
+        <h2>About <span>Me</span></h2>
+        <p class="about-subtitle">Who's riding?</p>
+        <div class="about-text">
+          <p>I am soon to earn my Bachelors in Computer Engineering from California Polytechnic State University, San Luis Obispo in June 2026.</p>
+          <p>My hobbies include working on my car and motorcycle — repairs, maintenance, and the occasional modification. I also design and build electronics projects for the fun and learning experience.</p>
+          <p>If you're looking to work (or even ride) with me, check out my Contact section below.</p>
+        </div>
+      </div>
+      <div class="about-right">
+        <div class="about-stat"><div class="about-stat-icon">🎓</div><div class="about-stat-info"><h4>Cal Poly SLO</h4><p>B.S. Computer Engineering, 2026</p></div></div>
+        <div class="about-stat"><div class="about-stat-icon">🏍️</div><div class="about-stat-info"><h4>Motorcycle Enthusiast</h4><p>Wrenching & riding</p></div></div>
+        <div class="about-stat"><div class="about-stat-icon">⚡</div><div class="about-stat-info"><h4>Electronics Builder</h4><p>Hardware & embedded systems</p></div></div>
+        <div class="about-stat"><div class="about-stat-icon">💻</div><div class="about-stat-info"><h4>Software Developer</h4><p>Full-stack & systems</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PROJECTS ==================== -->
+  <section id="projects">
+    <div class="projects-header">
+      <h2>My <span>Projects</span></h2>
+      <p> Ride through my work →</p>
+    </div>
+    <div class="projects-track-wrapper">
+      <div class="projects-track">
+        <div class="project-card">
+          <div class="project-card-image"><span>⚡ skate prototype</span></div>
+          <div class="project-card-body"><h3>Electric Quad Skates</h3><p>Embedded motor control system on easy slap-on wheels. Portable, fun, and a convenient mode of transportation.</p><div class="project-tags"><span class="project-tag">Hardware</span><span class="project-tag">Embedded</span><span class="project-tag">Motor Control</span></div></div>
+        </div>
+        <div class="project-card">
+          <div class="project-card-image"><span>🌐 web project</span></div>
+          <div class="project-card-body"><h3>Project Two</h3><p>Description of your next awesome project goes here. Replace this placeholder with your real work.</p><div class="project-tags"><span class="project-tag">Software</span><span class="project-tag">Web</span></div></div>
+        </div>
+        <div class="project-card">
+          <div class="project-card-image"><span>📡 IoT device</span></div>
+          <div class="project-card-body"><h3>Project Three</h3><p>Another project description. The horizontal scroll lets you add many projects without overwhelming the layout.</p><div class="project-tags"><span class="project-tag">Electronics</span><span class="project-tag">IoT</span></div></div>
+        </div>
+        <div class="project-card">
+          <div class="project-card-image"><span>🔧 hardware build</span></div>
+          <div class="project-card-body"><h3>Project Four</h3><p>Add as many project cards as you want. They scroll smoothly through the horizontal road section.</p><div class="project-tags"><span class="project-tag">Mechanical</span><span class="project-tag">Design</span></div></div>
+        </div>
+      </div>
+      <!-- <div class="scroll-right-hint">ride this way →</div> -->
+    </div>
+  </section>
+
+  <!-- ==================== CONTACT ==================== -->
+  <section id="contact">
+    <div class="contact-container">
+      <h2>Let's <span>Ride</span></h2>
+      <p class="contact-subtitle">Get in touch — I'd love to connect.</p>
+      <div class="contact-links">
+        <a href="mailto:myunan50@gmail.com" class="contact-link"><span class="contact-link-icon">✉</span>myunan50@gmail.com</a>
+        <a href="https://github.com/ethernality" target="_blank" class="contact-link"><span class="contact-link-icon">⌘</span>github.com/ethernality</a>
+        <a href="https://www.instagram.com/xsornins/" target="_blank" class="contact-link"><span class="contact-link-icon">@</span>@xsornins</a>
+      </div>
+    </div>
+  </section>
+  <div class="footer">© 2026 μBuilds — Myu Nan</div>
+
+  <!-- GSAP -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollToPlugin.min.js"></script>
+  <script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+  if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
+
+  const moto = document.getElementById('motorcycle');
+  const debugMotoPanel = document.getElementById('debugMotoPanel');
+  const ROAD_W = 80;
+  const HALF   = ROAD_W / 2;
+  const LEFT_CURVE = 140;
+  const RIGHT_CURVE = 92;
+  const PRESTOP_SCROLL = 600;
+  const HORIZONTAL_START_SCROLL = 1100;
+  const HORIZONTAL_END_SCROLL = 2100;
+  const RISE_START_SCROLL = 1200;
+  const RISE_RAMP_SCROLL = 140;
+  const RISE_RAMP_FRACTION = 0.12;
+  const RIGHT_ENTRY_SCROLL = 240;
+  const RIGHT_RAMP_SCROLL = 110;
+  const RIGHT_ENTRY_FRACTION = 0.88;
+  const PAGE_EXIT_SCROLL = 220;
+
+  function getAbsoluteTop(el) {
+    return el.getBoundingClientRect().top + window.scrollY;
+  }
+
+  /* =======================================================================
+     ROAD: Compute the road center-line path based on current layout.
+     Shape:
+       ↓  Left side vertical   (hero top → just above projects)
+       ╰→ Curve bottom-left    (turns right)
+       →  Horizontal            (across projects)
+       ╰↓ Curve top-right      (turns down)
+       ↓  Right side vertical  (contact → footer)
+     ======================================================================= */
+  function layout() {
+    const vw = window.innerWidth;
+    const leftX  = vw * 0.10;   // road center on left
+    const rightX = vw * 0.94;   // road center on right
+
+    const heroEl = document.getElementById('hero');
+    const projEl = document.getElementById('projects');
+    const contEl = document.getElementById('contact');
+
+    const heroTop  = getAbsoluteTop(heroEl);
+    const projTop  = getAbsoluteTop(projEl);
+    const contTop  = getAbsoluteTop(contEl);
+    const pageBot  = document.body.scrollHeight;
+
+    return { vw, leftX, rightX, heroTop, projTop, contTop, pageBot };
+  }
+
+  function getProjectsRoadOffset() {
+    const header = document.querySelector('.projects-header');
+    return (header ? header.offsetHeight : 70) + 20;
+  }
+
+  function buildCenterPath(L) {
+    const curveY = L.projTop + getProjectsRoadOffset();
+    return [
+      `M ${L.leftX} ${L.heroTop}`,
+      `L ${L.leftX} ${curveY - LEFT_CURVE}`,
+      `Q ${L.leftX} ${curveY}, ${L.leftX + LEFT_CURVE} ${curveY}`,
+      `L ${L.rightX - RIGHT_CURVE} ${curveY}`,
+      `Q ${L.rightX} ${curveY}, ${L.rightX} ${curveY + RIGHT_CURVE}`,
+      `L ${L.rightX} ${L.pageBot}`,
+    ].join(' ');
+  }
+
+  function offsetPathLR(L, sign) {
+    // sign: -1 = left edge, +1 = right edge
+    const d = HALF * sign;
+    const curveY = L.projTop + getProjectsRoadOffset();
+    return [
+      `M ${L.leftX + d} ${L.heroTop}`,
+      `L ${L.leftX + d} ${curveY - LEFT_CURVE - d * sign}`,
+      `Q ${L.leftX + d} ${curveY + d}, ${L.leftX + LEFT_CURVE} ${curveY + d}`,
+      `L ${L.rightX - RIGHT_CURVE} ${curveY + d}`,
+      `Q ${L.rightX - d} ${curveY + d}, ${L.rightX - d} ${curveY + RIGHT_CURVE + d * sign}`,
+      `L ${L.rightX - d} ${L.pageBot}`,
+    ].join(' ');
+  }
+
+  function drawRoad() {
+    const L = layout();
+    const svg = document.getElementById('road-svg');
+
+    svg.setAttribute('width',  L.vw);
+    svg.setAttribute('height', L.pageBot);
+    svg.style.height = L.pageBot + 'px';
+
+    const center = buildCenterPath(L);
+    document.getElementById('roadSurface').setAttribute('d', center);
+    document.getElementById('roadSurface').setAttribute('stroke-width', ROAD_W);
+    document.getElementById('roadDashes').setAttribute('d', center);
+    document.getElementById('roadEdgeL').setAttribute('d', offsetPathLR(L, -1));
+    document.getElementById('roadEdgeR').setAttribute('d', offsetPathLR(L, 1));
+  }
+
+  /* =======================================================================
+     DASHES scroll animation
+     ======================================================================= */
+  function animateDashes() {
+    gsap.to('#roadDashes', {
+      strokeDashoffset: -600,
+      ease: 'none',
+      scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 0.3 }
+    });
+  }
+
+  /* =======================================================================
+     MOTORCYCLE — the core animation
+     The motorcycle is position:fixed.
+     We break the scroll into 5 zones:
+
+     Zone A  (hero+about, vertical):
+       Motorcycle sits fixed on left road, facing down (rotation 0).
+       Road scrolls behind it.
+
+     Zone B  (approach projects):
+       Motorcycle follows the curve: moves from (leftX, 42%) →
+       rotates -90° to face right, arrives at horizontal road Y.
+
+     Zone C  (projects horizontal, section is pinned):
+       Motorcycle traverses left→right across the viewport at the
+       horizontal road Y.  Its X position is driven by the pin progress.
+
+     Zone D  (exit projects):
+       Motorcycle follows the right curve: rotates from -90° → 0°,
+       ends up on the right side.
+
+     Zone E  (contact, vertical):
+       Motorcycle sits fixed on right road, facing down.
+     ======================================================================= */
+  function animateMotorcycle() {
+    const track = document.querySelector('.projects-track');
+    const projects = document.getElementById('projects');
+    const easeRamp = gsap.parseEase('power2.in');
+    const easeHide = gsap.parseEase('none');
+    const easeEnter = gsap.parseEase('sine.in');
+    const easeSettle = gsap.parseEase('power2.out');
+    const easeExit = gsap.parseEase('power3.in');
+    const lerp = gsap.utils.interpolate;
+    const ROTATE_UP = 90;
+    const ROTATE_DOWN = 90;
+    let ticking = false;
+
+    const getScrollDist = () => Math.max(track.scrollWidth - window.innerWidth + 100, 0);
+
+    const getMetrics = () => {
+      const L = layout();
+      const cruiseTop = window.innerHeight * 0.42;
+      const riseStart = Math.max(Math.min(RISE_START_SCROLL, HORIZONTAL_END_SCROLL - 1), 0);
+      const rampEnd = Math.min(riseStart + RISE_RAMP_SCROLL, HORIZONTAL_END_SCROLL - 1);
+      const horizStart = HORIZONTAL_START_SCROLL;
+      const horizEnd = HORIZONTAL_END_SCROLL + 20;
+      const rightEntryEnd = horizEnd + RIGHT_ENTRY_SCROLL;
+      const rightRampEnd = rightEntryEnd + RIGHT_RAMP_SCROLL;
+      const pageExitEnd = Math.max(L.pageBot - window.innerHeight, 0);
+      const pageExitStart = Math.max(pageExitEnd - PAGE_EXIT_SCROLL, rightRampEnd + 1);
+      const hideTop = 0;
+      const rampTop = lerp(cruiseTop, hideTop, RISE_RAMP_FRACTION);
+      const entryTop = -80;
+      const settleTop = lerp(entryTop, cruiseTop, RIGHT_ENTRY_FRACTION);
+      const exitTop = window.innerHeight + 120;
+
+      return {
+        leftX: L.leftX,
+        rightX: L.rightX,
+        cruiseTop,
+        riseStart,
+        rampEnd,
+        horizStart,
+        horizEnd,
+        rightEntryEnd,
+        rightRampEnd,
+        pageExitStart,
+        pageExitEnd,
+        hideTop,
+        rampTop,
+        entryTop,
+        settleTop,
+        exitTop,
+      };
+    };
+
+    const paintMoto = (left, top, rotation, opacity) => {
+      moto.style.left = `${left}px`;
+      moto.style.top = `${top}px`;
+      moto.style.opacity = `${opacity}`;
+      moto.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+    };
+
+    const setMotoState = () => {
+      ticking = false;
+      const M = getMetrics();
+      const scrollY = window.scrollY;
+      let left = M.leftX;
+      let top = M.cruiseTop;
+      let rotation = ROTATE_DOWN;
+      let opacity = 1;
+      let stage = 'left-vertical';
+
+      if (scrollY < M.riseStart) {
+        left = M.leftX;
+        top = M.cruiseTop;
+        rotation = ROTATE_DOWN;
+        opacity = 1;
+        stage = 'left-vertical';
+      } else if (scrollY < M.rampEnd) {
+        const progress = easeRamp((scrollY - M.riseStart) / Math.max(M.rampEnd - M.riseStart, 1));
+        const totalProgress = (scrollY - M.riseStart) / Math.max(M.horizEnd - M.riseStart, 1);
+        left = M.leftX;
+        top = lerp(M.cruiseTop, M.rampTop, progress);
+        rotation = lerp(ROTATE_DOWN, ROTATE_UP, totalProgress);
+        opacity = 1;
+        stage = 'ramp-up-left-road';
+      } else if (scrollY < M.horizEnd) {
+        const progress = easeHide((scrollY - M.rampEnd) / Math.max(M.horizEnd - M.rampEnd, 1));
+        const totalProgress = (scrollY - M.riseStart) / Math.max(M.horizEnd - M.riseStart, 1);
+        left = M.leftX;
+        top = lerp(M.rampTop, M.hideTop, progress);
+        rotation = lerp(ROTATE_DOWN, ROTATE_UP, totalProgress);
+        opacity = 1;
+        stage = 'rising-left-road';
+      } else if (scrollY < M.rightEntryEnd) {
+        const progress = easeEnter((scrollY - M.horizEnd) / Math.max(M.rightEntryEnd - M.horizEnd, 1));
+        left = M.rightX;
+        top = lerp(M.entryTop, M.settleTop, progress);
+        rotation = ROTATE_DOWN;
+        opacity = 1;
+        stage = 'entering-right-road';
+      } else if (scrollY < M.rightRampEnd) {
+        const progress = easeSettle((scrollY - M.rightEntryEnd) / Math.max(M.rightRampEnd - M.rightEntryEnd, 1));
+        left = M.rightX;
+        top = lerp(M.settleTop, M.cruiseTop, progress);
+        rotation = ROTATE_DOWN;
+        opacity = 1;
+        stage = 'ramp-down-right-road';
+      } else if (scrollY < M.pageExitStart) {
+        left = M.rightX;
+        top = M.cruiseTop;
+        rotation = ROTATE_DOWN;
+        opacity = 1;
+        stage = 'right-vertical';
+      } else if (scrollY < M.pageExitEnd) {
+        const progress = easeExit((scrollY - M.pageExitStart) / Math.max(M.pageExitEnd - M.pageExitStart, 1));
+        left = M.rightX;
+        top = lerp(M.cruiseTop, M.exitTop, progress);
+        rotation = ROTATE_DOWN;
+        opacity = 1;
+        stage = 'exiting-page-right-road';
+      } else {
+        left = M.rightX;
+        top = M.exitTop;
+        rotation = ROTATE_DOWN;
+        opacity = 1;
+        stage = 'off-page-right-road';
+      }
+
+      paintMoto(left, top, rotation, opacity);
+      if (debugMotoPanel) {
+        debugMotoPanel.textContent = [
+          'DEBUG BUILD R7',
+          `stage: ${stage}`,
+          `scrollY: ${Math.round(scrollY)}`,
+          `left/top: ${Math.round(left)}, ${Math.round(top)}`,
+          `rotation: ${Math.round(rotation)}`,
+          `opacity: ${opacity.toFixed(2)}`,
+          `riseStart: ${Math.round(M.riseStart)}`,
+          `rampEnd: ${Math.round(M.rampEnd)}`,
+          `horizStart: ${Math.round(M.horizStart)}`,
+          `horizEnd: ${Math.round(M.horizEnd)}`,
+          `rightEntryEnd: ${Math.round(M.rightEntryEnd)}`,
+          `rightRampEnd: ${Math.round(M.rightRampEnd)}`,
+          `pageExitStart: ${Math.round(M.pageExitStart)}`,
+          `pageExitEnd: ${Math.round(M.pageExitEnd)}`,
+          `rampTop: ${Math.round(M.rampTop)}`,
+          `hideTop: ${Math.round(M.hideTop)}`,
+          `entryTop: ${Math.round(M.entryTop)}`,
+          `settleTop: ${Math.round(M.settleTop)}`,
+          `exitTop: ${Math.round(M.exitTop)}`,
+          `projectsTop: ${Math.round(getAbsoluteTop(projects))}`,
+          `hash: ${location.hash || '(none)'}`,
+        ].join('\n');
+      }
+    };
+
+    const requestMotoUpdate = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(setMotoState);
+    };
+
+    const pinST = ScrollTrigger.create({
+      trigger: '#projects',
+      start: 'top top',
+      end: () => `+=${getScrollDist()}`,
+      pin: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: requestMotoUpdate,
+      onRefresh: requestMotoUpdate,
+      onRefreshInit: requestMotoUpdate,
+    });
+
+    gsap.to(track, {
+      x: () => -getScrollDist(),
+      ease: 'none',
+      scrollTrigger: pinST,
+    });
+
+    ScrollTrigger.create({
+      trigger: 'body',
+      start: 'top top',
+      end: 'bottom bottom',
+      invalidateOnRefresh: true,
+      onUpdate: requestMotoUpdate,
+      onRefresh: requestMotoUpdate,
+      onRefreshInit: requestMotoUpdate,
+    });
+
+    window.addEventListener('scroll', requestMotoUpdate, { passive: true });
+    window.addEventListener('resize', requestMotoUpdate, { passive: true });
+    setMotoState();
+  }
+
+  function forceTopStart() {
+    const resetTop = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    resetTop();
+    requestAnimationFrame(resetTop);
+    requestAnimationFrame(() => requestAnimationFrame(resetTop));
+    [60, 180, 360, 700].forEach(delay => setTimeout(resetTop, delay));
+  }
+
+
+  /* =======================================================================
+     SECTION REVEAL ANIMATIONS
+     ======================================================================= */
+  function animateSections() {
+    function heroEntrance() {
+      const tl = gsap.timeline();
+      tl.to('.hero-greeting', { opacity:1, duration:.6, ease:'power2.out' }, 0.1)
+        .fromTo('.hero-greeting', { y:20 }, { y:0, duration:.6 }, 0.1)
+        .to('.hero-name', { opacity:1, duration:.8, ease:'power2.out' }, 0.3)
+        .fromTo('.hero-name', { y:30 }, { y:0, duration:.8 }, 0.3)
+        .to('.hero-title', { opacity:1, duration:.6, ease:'power2.out' }, 0.6)
+        .fromTo('.hero-title', { y:15 }, { y:0, duration:.6 }, 0.6)
+        .to('.hero-scroll-hint', { opacity:1, duration:.8 }, 1.2);
+    }
+    gsap.from('.about-left', { opacity:0, x:-40, duration:1, ease:'power2.out', scrollTrigger:{ trigger:'#about', start:'top 60%' }});
+    gsap.from('.about-stat', { opacity:0, x:30, stagger:.12, duration:.7, ease:'power2.out', scrollTrigger:{ trigger:'#about', start:'top 50%' }});
+    gsap.from('.project-card', { opacity:0, y:40, stagger:.15, duration:.8, ease:'power2.out', scrollTrigger:{ trigger:'#projects', start:'top 60%' }});
+    gsap.to('.scroll-right-hint', { opacity:0, scrollTrigger:{ trigger:'#projects', start:'top top', end:()=>`+=${(document.querySelector('.projects-track').scrollWidth - window.innerWidth)*0.3}`, scrub:true }});
+    return heroEntrance;
+  }
+
+  /* =======================================================================
+     SIDEBAR DOTS + NAV
+     ======================================================================= */
+  function setupNav() {
+    const ids = ['hero','about','projects','contact'];
+    const dots = document.querySelectorAll('.sidebar-dot');
+    ids.forEach((id,i) => {
+      ScrollTrigger.create({ trigger:`#${id}`, start:'top center', end:'bottom center',
+        onEnter:()=>act(i), onEnterBack:()=>act(i) });
+    });
+    function act(i){ dots.forEach(d=>d.classList.remove('active')); dots[i]?.classList.add('active'); }
+    dots.forEach(d=>d.addEventListener('click',()=>{
+      const t=document.getElementById(d.dataset.section);
+      if(t) gsap.to(window,{scrollTo:t,duration:1.2,ease:'power2.inOut'});
+    }));
+    document.querySelectorAll('[data-nav]').forEach(a=>{
+      a.addEventListener('click',e=>{
+        e.preventDefault();
+        const t=document.querySelector(a.getAttribute('href'));
+        if(t) gsap.to(window,{scrollTo:t,duration:1.2,ease:'power2.inOut'});
+      });
+    });
+  }
+
+  /* =======================================================================
+     INIT
+     ======================================================================= */
+  window.addEventListener('load', () => {
+    requestAnimationFrame(() => { requestAnimationFrame(() => {
+      forceTopStart();
+      drawRoad();
+      animateDashes();
+      animateMotorcycle();
+      const heroPlay = animateSections();
+      setupNav();
+
+      gsap.to('#loader', { opacity:0, duration:.5, delay:.3, onComplete:() => {
+        document.getElementById('loader').classList.add('hidden');
+        heroPlay();
+      }});
+
+      let rTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(rTimer);
+        rTimer = setTimeout(() => { drawRoad(); ScrollTrigger.refresh(); }, 200);
+      });
+    }); });
+  });
+  window.addEventListener('pageshow', forceTopStart);
+  </script>
+</body>
+</html>
+
