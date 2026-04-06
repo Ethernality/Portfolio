@@ -121,16 +121,71 @@
     .contact-link:hover .contact-link-icon{color:#fff !important}
     .footer{text-align:center;padding:28px;margin-top:8vh;font-size:.72rem;color:var(--text-dim);font-family:'Space Mono',monospace;position:relative;z-index:5}
 
+    /* ===== HAMBURGER BUTTON ===== */
+    .nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;cursor:pointer;padding:6px;background:none;border:none;z-index:210}
+    .nav-hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:all .3s}
+    .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+    .nav-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+    .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
     /* ===== RESPONSIVE ===== */
+    @media(max-width:900px){
+      #about{padding-left:60px}
+    }
+
     @media(max-width:768px){
-      nav{padding:0 18px}.nav-links{gap:18px}.nav-links a{font-size:1rem}
+      /* Nav */
+      nav{padding:0 18px}
+      .nav-hamburger{display:flex}
+      .nav-links{
+        display:none;position:fixed;top:var(--nav-h);left:0;right:0;
+        flex-direction:column;gap:0;list-style:none;
+        background:rgba(13,13,13,.97);backdrop-filter:blur(16px);
+        border-bottom:1px solid rgba(255,255,255,.06);
+        padding:12px 0;z-index:199
+      }
+      .nav-links.open{display:flex}
+      .nav-links li a{display:block;padding:14px 24px;font-size:1.3rem;color:var(--text-muted);text-decoration:none;transition:color .2s}
+      .nav-links li a:hover{color:var(--accent)}
+
+      /* Hide desktop-only elements */
       .sidebar-nav{display:none}
-      :root{--moto-w:42px;--moto-h:42px}
-      #hero,#about{padding-left:40px}
-      #contact{padding-right:40px}
-      .about-container{grid-template-columns:1fr;gap:36px}
-      .project-card{width:290px}
-      .contact-links{flex-direction:column;align-items:center}
+      #motorcycle{display:none}
+      #road-svg{display:none}
+
+      /* Hero — centered, full-width */
+      #hero{padding:var(--nav-h) 24px 60px;align-items:center;justify-content:center}
+      .hero-content{text-align:center;max-width:100%}
+      .hero-scroll-hint{justify-content:center}
+
+      .nav-auto-btn{background:#e63946;color:#fff !important;padding:8px 16px;border-radius:8px;font-weight:700;text-decoration:none;transition:all .25s;box-shadow:0 4px 14px rgba(230,57,70,.4)}
+    .nav-auto-btn:hover{background:#ff4555;transform:translateY(-1px);box-shadow:0 6px 18px rgba(230,57,70,.6)}
+    /* About */
+      #about{min-height:auto;padding:80px 24px 80px}
+      .about-container{grid-template-columns:1fr;gap:32px;max-width:100%}
+
+      /* Projects */
+      #projects{padding-top:60px}
+      .projects-track{padding:0 20px 40px;gap:20px}
+      .project-card{width:min(340px, 88vw)}
+
+      /* Contact — drop the oversized 28vh bottom gap */
+      #contact{padding:80px 24px 60px}
+      .contact-links{flex-direction:column;align-items:stretch}
+      .contact-link{justify-content:center}
+
+      /* Projects — vertical stack; disable GSAP horizontal pin on mobile */
+      .projects-track-wrapper{overflow:visible}
+      .projects-track{flex-wrap:wrap;width:auto;transform:none !important}
+      .project-card{width:100%}
+    }
+
+    @media(max-width:480px){
+      .hero-content .hero-name{line-height:1.1}
+      .projects-track{padding:0 14px 32px;gap:14px}
+      /* full-width cards — 90vw was overflowing with 14px track padding */
+      .project-card{width:100%}
+      .about-stat{padding:14px 16px}
     }
   </style>
 </head>
@@ -153,11 +208,15 @@
   <!-- NAV -->
   <nav>
     <div class="nav-logo"><span>μ</span>Builds</div>
-    <ul class="nav-links">
+    <ul class="nav-links" id="navLinks">
       <li><a href="#about" data-nav>About</a></li>
       <li><a href="#projects" data-nav>Projects</a></li>
       <li><a href="#contact" data-nav>Contact</a></li>
+      <li><a href="https://auto.mubuilds.com" target="_blank" class="nav-auto-btn">Auto Repair</a></li>
     </ul>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
 
   <!-- SIDEBAR DOTS -->
@@ -228,6 +287,7 @@
           <p>I am soon to earn my Bachelors in Computer Engineering from California Polytechnic State University, San Luis Obispo in June 2026.</p>
           <p>My hobbies include working on my car and motorcycle — repairs, maintenance, and the occasional modification. I also design and build electronics projects for the fun and learning experience.</p>
           <p>If you're looking to work (or even ride) with me, check out my Contact section below.</p>
+          <p>I also run a car & motorcycle repair service — check it out at <a href="https://auto.mubuilds.com" target="_blank" style="color:var(--accent);text-decoration:underline">auto.mubuilds.com</a>.</p>
         </div>
       </div>
       <div class="about-right">
@@ -277,6 +337,7 @@
         <a href="mailto:myunan50@gmail.com" class="contact-link"><span class="contact-link-icon">✉</span>myunan50@gmail.com</a>
         <a href="https://github.com/ethernality" target="_blank" class="contact-link"><span class="contact-link-icon">⌘</span>github.com/ethernality</a>
         <a href="https://www.instagram.com/xsornins/" target="_blank" class="contact-link"><span class="contact-link-icon">@</span>@xsornins</a>
+        <a href="https://auto.mubuilds.com" target="_blank" class="contact-link"><span class="contact-link-icon">🔧</span>auto.mubuilds.com</a>
       </div>
     </div>
   </section>
@@ -420,6 +481,8 @@
      Zone E  (contact, vertical):
        Motorcycle sits fixed on right road, facing down.
      ======================================================================= */
+  const isMobile = () => window.innerWidth <= 768;
+
   function animateMotorcycle() {
     const track = document.querySelector('.projects-track');
     const projects = document.getElementById('projects');
@@ -580,23 +643,27 @@
       requestAnimationFrame(setMotoState);
     };
 
-    const pinST = ScrollTrigger.create({
-      trigger: '#projects',
-      start: 'top top',
-      end: () => `+=${getScrollDist()}`,
-      pin: true,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      onUpdate: requestMotoUpdate,
-      onRefresh: requestMotoUpdate,
-      onRefreshInit: requestMotoUpdate,
-    });
+    // Desktop only: pin projects section and drive horizontal track scroll.
+    // On mobile the cards are stacked vertically via CSS so no pin is needed.
+    if (!isMobile()) {
+      const pinST = ScrollTrigger.create({
+        trigger: '#projects',
+        start: 'top top',
+        end: () => `+=${getScrollDist()}`,
+        pin: true,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onUpdate: requestMotoUpdate,
+        onRefresh: requestMotoUpdate,
+        onRefreshInit: requestMotoUpdate,
+      });
 
-    gsap.to(track, {
-      x: () => -getScrollDist(),
-      ease: 'none',
-      scrollTrigger: pinST,
-    });
+      gsap.to(track, {
+        x: () => -getScrollDist(),
+        ease: 'none',
+        scrollTrigger: pinST,
+      });
+    }
 
     ScrollTrigger.create({
       trigger: 'body',
@@ -697,6 +764,26 @@
     }); });
   });
   window.addEventListener('pageshow', forceTopStart);
+
+  /* ===== HAMBURGER MENU ===== */
+  (function(){
+    const btn = document.getElementById('navHamburger');
+    const links = document.getElementById('navLinks');
+    if (!btn || !links) return;
+    btn.addEventListener('click', () => {
+      const open = links.classList.toggle('open');
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open);
+    });
+    // Close menu when a link is tapped
+    links.addEventListener('click', e => {
+      if (e.target.closest('a')) {
+        links.classList.remove('open');
+        btn.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  })();
   </script>
 </body>
 </html>
